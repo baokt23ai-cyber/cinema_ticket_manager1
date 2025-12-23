@@ -1,3 +1,4 @@
+# ui_dashboard.py
 import tkinter as tk
 from tkinter import messagebox
 from datetime import datetime
@@ -10,7 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class ManHinhDashboard(tk.Toplevel):
     """
-    Dashboard "cũ" kiểu cửa sổ riêng (Toplevel) + sidebar trái + KPI + 2 chart.
+    Dashboard kiểu cửa sổ riêng (Toplevel) + sidebar trái + KPI + 2 chart.
     - KHÔNG warning ticklabels
     - Query theo schema: ve -> chi_tiet_hoa_don -> hoa_don (ve không có hoa_don_id)
     """
@@ -31,23 +32,39 @@ class ManHinhDashboard(tk.Toplevel):
         right.pack(side="right", fill="both", expand=True)
 
         # ===== Sidebar =====
-        tk.Label(left, text="Bán vé", font=("Arial", 11, "bold"), bg="#f4f4f4").pack(anchor="w", padx=12, pady=(12, 6))
-        tk.Button(left, text="Mở màn hình bán vé", command=self.open_ban_ve).pack(fill="x", padx=12)
+        tk.Label(left, text="Bán vé", font=("Arial", 11, "bold"), bg="#f4f4f4").pack(
+            anchor="w", padx=12, pady=(12, 6)
+        )
+        tk.Button(left, text="Mở màn hình bán vé", command=self.open_ban_ve).pack(
+            fill="x", padx=12
+        )
 
-        tk.Label(left, text="Quản trị", font=("Arial", 11, "bold"), bg="#f4f4f4").pack(anchor="w", padx=12, pady=(16, 6))
-        tk.Button(left, text="Quản lý phim", command=self.open_quan_ly_phim).pack(fill="x", padx=12, pady=3)
-        tk.Button(left, text="Quản lý phòng", command=self.open_quan_ly_phong).pack(fill="x", padx=12, pady=3)
-        tk.Button(left, text="Quản lý suất chiếu", command=self.open_quan_ly_suat).pack(fill="x", padx=12, pady=3)
+        tk.Label(left, text="Quản trị", font=("Arial", 11, "bold"), bg="#f4f4f4").pack(
+            anchor="w", padx=12, pady=(16, 6)
+        )
+        tk.Button(left, text="Quản lý phim", command=self.open_quan_ly_phim).pack(
+            fill="x", padx=12, pady=3
+        )
+        tk.Button(left, text="Quản lý phòng", command=self.open_quan_ly_phong).pack(
+            fill="x", padx=12, pady=3
+        )
+        tk.Button(left, text="Quản lý suất chiếu", command=self.open_quan_ly_suat).pack(
+            fill="x", padx=12, pady=3
+        )
 
         # ===== Header =====
         header = tk.Frame(right, bg="white")
         header.pack(fill="x", padx=12, pady=10)
 
-        tk.Label(header, text="DASHBOARD BÁO CÁO", font=("Arial", 15, "bold"), bg="white").pack(side="left")
+        tk.Label(header, text="DASHBOARD BÁO CÁO", font=("Arial", 15, "bold"), bg="white").pack(
+            side="left"
+        )
 
         username = self.user.get("username") or self.user.get("ten_dang_nhap") or "admin"
         role = self.user.get("role") or self.user.get("vai_tro") or "quan_tri"
-        tk.Label(header, text=f"User: {username} | Vai trò: {role}", fg="gray", bg="white").pack(side="right")
+        tk.Label(header, text=f"User: {username} | Vai trò: {role}", fg="gray", bg="white").pack(
+            side="right"
+        )
 
         # ===== Filter bar =====
         filt = tk.LabelFrame(right, text="Bộ lọc", bg="white", padx=10, pady=6)
@@ -57,7 +74,9 @@ class ManHinhDashboard(tk.Toplevel):
         self.e_from = tk.Entry(filt, width=14)
         self.e_from.grid(row=0, column=1, padx=6)
 
-        tk.Label(filt, text="Đến ngày (YYYY-MM-DD)", bg="white").grid(row=0, column=2, sticky="w", padx=(10, 0))
+        tk.Label(filt, text="Đến ngày (YYYY-MM-DD)", bg="white").grid(
+            row=0, column=2, sticky="w", padx=(10, 0)
+        )
         self.e_to = tk.Entry(filt, width=14)
         self.e_to.grid(row=0, column=3, padx=6)
 
@@ -88,6 +107,7 @@ class ManHinhDashboard(tk.Toplevel):
 
         self.reload()
 
+    # ================= KPI / Helpers =================
     def _kpi_box(self, parent, title, value):
         box = tk.LabelFrame(parent, text=title, bg="white", padx=10, pady=8)
         box.pack(side="left", fill="x", expand=True, padx=6)
@@ -132,7 +152,8 @@ class ManHinhDashboard(tk.Toplevel):
         cur = conn.cursor()
         try:
             # KPI tổng: doanh thu + vé + hóa đơn
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT
                     COALESCE(SUM(v.gia), 0) AS doanh_thu,
                     COALESCE(COUNT(v.ve_id), 0) AS ve_da_ban,
@@ -143,11 +164,14 @@ class ManHinhDashboard(tk.Toplevel):
                 WHERE DATE(v.thoi_gian_ban) BETWEEN %s AND %s
                   AND v.trang_thai='da_ban'
                   AND (hd.trang_thai IS NULL OR hd.trang_thai='da_thanh_toan')
-            """, (d1, d2))
+                """,
+                (d1, d2),
+            )
             total_rev, total_ticket, total_bill = cur.fetchone()
 
             # doanh thu theo ngày
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT DATE(v.thoi_gian_ban) AS ngay,
                        COALESCE(SUM(v.gia), 0) AS doanh_thu
                 FROM ve v
@@ -158,11 +182,14 @@ class ManHinhDashboard(tk.Toplevel):
                   AND (hd.trang_thai IS NULL OR hd.trang_thai='da_thanh_toan')
                 GROUP BY DATE(v.thoi_gian_ban)
                 ORDER BY ngay
-            """, (d1, d2))
+                """,
+                (d1, d2),
+            )
             rev_by_day = cur.fetchall()
 
             # top phim theo số vé
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT p.ten_phim, COUNT(v.ve_id) AS so_ve
                 FROM ve v
                 JOIN suat_chieu sc ON v.suat_chieu_id = sc.suat_chieu_id
@@ -175,7 +202,9 @@ class ManHinhDashboard(tk.Toplevel):
                 GROUP BY p.phim_id, p.ten_phim
                 ORDER BY so_ve DESC
                 LIMIT 10
-            """, (d1, d2))
+                """,
+                (d1, d2),
+            )
             top_movies = cur.fetchall()
 
             return float(total_rev), int(total_ticket), int(total_bill), rev_by_day, top_movies
@@ -184,8 +213,14 @@ class ManHinhDashboard(tk.Toplevel):
             messagebox.showerror("Lỗi query", str(e), parent=self)
             return None
         finally:
-            cur.close()
-            conn.close()
+            try:
+                cur.close()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
 
     def _clear_frame(self, frame: tk.Widget):
         for w in frame.winfo_children():
@@ -206,8 +241,7 @@ class ManHinhDashboard(tk.Toplevel):
             x = list(range(len(labels)))
 
             ax.plot(x, y, marker="o")
-            # ✅ không warning
-            ax.set_xticks(x, labels)
+            ax.set_xticks(x, labels)  # ✅ không warning
             for t in ax.get_xticklabels():
                 t.set_rotation(45)
                 t.set_ha("right")
@@ -234,8 +268,7 @@ class ManHinhDashboard(tk.Toplevel):
             x = list(range(len(labels)))
 
             ax.bar(x, vals)
-            # ✅ không warning
-            ax.set_xticks(x, labels)
+            ax.set_xticks(x, labels)  # ✅ không warning
             for t in ax.get_xticklabels():
                 t.set_rotation(20)
                 t.set_ha("right")
@@ -250,7 +283,7 @@ class ManHinhDashboard(tk.Toplevel):
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
 
-    # ===== open screens =====
+    # ================= Open screens =================
     def _safe_import(self, module_name: str, class_name: str):
         try:
             mod = __import__(module_name, fromlist=[class_name])
@@ -259,33 +292,52 @@ class ManHinhDashboard(tk.Toplevel):
             messagebox.showerror("Lỗi import", f"{module_name}.{class_name}\n\n{e}", parent=self)
             return None
 
-    def _open_in_window(self, title: str, geom: str, FrameCls):
+    def _open_in_window(self, title: str, geom: str, FrameCls, uid=None):
         """
         Mở FrameCls vào Toplevel.
-        Gọi linh hoạt: FrameCls(win, user=self.user) / FrameCls(win, self.user) / FrameCls(win)
+        Thử linh hoạt các kiểu __init__ phổ biến:
+        - FrameCls(win, user=self.user)
+        - FrameCls(win, self.user)
+        - FrameCls(win, uid)
+        - FrameCls(win)
         """
         win = tk.Toplevel(self)
         win.title(title)
         win.geometry(geom)
 
-        # thử các kiểu __init__ phổ biến
+        # 1) keyword user=
         try:
             w = FrameCls(win, user=self.user)
-            w.pack(fill="both", expand=True)
+            if hasattr(w, "pack"):
+                w.pack(fill="both", expand=True)
             return
         except TypeError:
             pass
 
+        # 2) truyền user dict
         try:
             w = FrameCls(win, self.user)
-            w.pack(fill="both", expand=True)
+            if hasattr(w, "pack"):
+                w.pack(fill="both", expand=True)
             return
         except TypeError:
             pass
 
+        # 3) truyền uid (nếu có)
+        if uid is not None:
+            try:
+                w = FrameCls(win, uid)
+                if hasattr(w, "pack"):
+                    w.pack(fill="both", expand=True)
+                return
+            except TypeError:
+                pass
+
+        # 4) chỉ parent
         try:
             w = FrameCls(win)
-            w.pack(fill="both", expand=True)
+            if hasattr(w, "pack"):
+                w.pack(fill="both", expand=True)
             return
         except Exception as e:
             messagebox.showerror("Lỗi mở màn", str(e), parent=self)
@@ -306,44 +358,36 @@ class ManHinhDashboard(tk.Toplevel):
             self._open_in_window("Quản lý suất chiếu", "1100x650", FrameCls)
 
     def open_ban_ve(self):
+        """
+        ✅ FIX CHẮC CHẮN:
+        - Class ManHinhBanVe của bạn đang yêu cầu tham số bắt buộc: nguoi_dung_id
+          (kiểu __init__(root, nguoi_dung_id))
+        - Vì vậy phải lấy uid từ self.user và truyền vào.
+        """
         FrameCls = self._safe_import("ui_ban_ve", "ManHinhBanVe")
         if not FrameCls:
             return
 
-        # ✅ FIX CHẮC CHẮN: KHÔNG truyền keyword user= (vì class bạn đang lỗi ở đây)
-        # thử nhiều kiểu gọi
-        try:
-            # kiểu: ManHinhBanVe(root, user_dict) (nếu class tự tạo Toplevel)
-            FrameCls(self.root, self.user)
-            return
-        except TypeError:
-            pass
-        except Exception:
-            pass
+        # Lấy uid chắc chắn
+        uid = self.user.get("nguoi_dung_id") or self.user.get("id") or self.user.get("user_id")
+        if uid is None:
+            messagebox.showwarning(
+                "Thiếu người dùng",
+                "Không tìm thấy nguoi_dung_id trong biến user.\n"
+                "Mình sẽ dùng tạm uid=1 để mở màn bán vé (test).",
+                parent=self,
+            )
+            uid = 1
 
+        # Ưu tiên kiểu chuẩn bạn đang dùng: ManHinhBanVe(root, nguoi_dung_id) (tự tạo Toplevel)
         try:
-            # kiểu: ManHinhBanVe(root, nguoi_dung_id)
-            uid = self.user.get("nguoi_dung_id") or self.user.get("id") or self.user.get("user_id")
             FrameCls(self.root, uid)
             return
-        except TypeError:
-            pass
         except Exception:
             pass
 
-        # fallback: mở vào cửa sổ riêng
-        win = tk.Toplevel(self)
-        win.title("Bán vé")
-        win.geometry("1100x650")
-
+        # Nếu class là Frame, mở trong Toplevel và pack
         try:
-            # kiểu Frame: ManHinhBanVe(win, user_dict) không keyword
-            FrameCls(win, self.user).pack(fill="both", expand=True)
-            return
-        except TypeError:
-            pass
-
-        try:
-            FrameCls(win).pack(fill="both", expand=True)
+            self._open_in_window("Bán vé", "1100x650", FrameCls, uid=uid)
         except Exception as e:
             messagebox.showerror("Lỗi mở bán vé", str(e), parent=self)
