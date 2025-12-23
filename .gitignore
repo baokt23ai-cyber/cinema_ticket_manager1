@@ -1,0 +1,19 @@
+# secrets
+config.py
+*.env
+
+# venv
+venv/
+.venv/
+
+# python cache
+__pycache__/
+*.pyc
+
+# output files
+ve_da_in/
+*.log
+
+# editor
+.vscode/
+.DS_Store
